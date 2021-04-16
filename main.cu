@@ -157,13 +157,16 @@ __global__ void mean_std(T* g_cumsum, T* g_sqr_cumsum, float* g_mean, float* g_s
 int main() {
 	//Длина подпоследовательности
 	int m = 5;
-
 	int n = 1 << 7;
 	int bytes = n * sizeof(int);
+
+	assert(m < n);
 
 	int numThreads = 1 << 5;
 	int numBlocks = (n + (numThreads * 2 - 1)) / (numThreads * 2);
 	int smemSize = numThreads * sizeof(int) * 2;
+
+	assert(n % numThreads == 0);
 
 	//Выделение памяти на хосте
 	int* h_idata = (int*)malloc(bytes);
