@@ -11,16 +11,18 @@
 #include <device_launch_parameters.h>
 
 template<class T>
-__global__ void ed_norm(T* g_idata, float* g_mean, float* g_std, float* g_ed_norm, int m, int size) {
-	int x = blockDim.x * blockIdx.x + threadIdx.x;
-	int y = blockDim.y * blockIdx.y + threadIdx.y;
+__global__ void ed_norm(T* g_idata, float* g_mean, float* g_std, float* g_ed_norm, int l, int n) {
+	int y = blockIdx.y;
+	int x = blockIdx.x * blockDim.x + threadIdx.x;
+	int blockId = blockIdx.y * gridDim.x + blockIdx.x;
+	int i = blockId * blockDim.x + threadIdx.x;
 
-	if (x < (size - m) && y < (size - m)) {
+	if (x < (n - l)) {
 		int dot = 0;
-		for (int k = 0; k < m; k++) {
+		for (int k = 0; k < l; k++) {
 			dot += g_idata[x + k] * g_idata[y + k];
 		}
-		g_ed_norm[x * (size - m) + y] = (2 * m * (1 - (dot - m * g_mean[x] * g_mean[y]) / (m * g_std[x] * g_std[y])));
+		g_ed_norm[i] = (2 * l * (1 - (dot - l * g_mean[x] * g_mean[y]) / (l * g_std[x] * g_std[y])));
 	}
 }
 

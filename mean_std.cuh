@@ -11,6 +11,6 @@
 #define SNIPPETFINDER_MEANSTD_H_
 
 template<class T>
-__global__ void mean_std(T* g_cumsum, T* g_cumsum_sqr, float* g_mean, float* g_std, int m, int size);
+__global__ void mean_std(T* g_cumsum, T* g_cumsum_sqr, float* g_mean, float* g_std, int l, int size);
 
 #endif  // SNIPPETFINDER_MEANSTD_H_

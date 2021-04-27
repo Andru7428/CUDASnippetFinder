@@ -85,12 +85,18 @@
     <CudaCompile Include="ed_norm.cu" />
     <CudaCompile Include="main.cu" />
     <CudaCompile Include="mean_std.cu" />
+    <CudaCompile Include="MPdist.cu" />
+    <CudaCompile Include="test_mean_std.cu" />
     <CudaCompile Include="scan.cu" />
+    <CudaCompile Include="test_scan.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ed_norm.cuh" />
     <ClInclude Include="mean_std.cuh" />
+    <ClInclude Include="MPdist.cuh" />
     <ClInclude Include="scan.cuh" />
+    <ClInclude Include="test_mean_std.cuh" />
+    <ClInclude Include="test_scan.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

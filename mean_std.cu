@@ -23,11 +23,11 @@
 * size - длина временного ряда
 */
 template<class T>
-__global__ void mean_std(T* g_cumsum, T* g_cumsum_sqr, float* g_mean, float* g_std, int m, int size) {
+__global__ void mean_std(T* g_cumsum, T* g_cumsum_sqr, float* g_mean, float* g_std, int l, int size) {
 	int i = blockDim.x * blockIdx.x + threadIdx.x;
-	if (i < size - m) {
-		float mean = (g_cumsum[i + m] - g_cumsum[i]) / float(m);
-		float std = sqrt((g_cumsum_sqr[i + m] - g_cumsum_sqr[i]) / float(m) - mean * mean);
+	if (i < size - l) {
+		float mean = (g_cumsum[i + l] - g_cumsum[i]) / float(l);
+		float std = sqrt((g_cumsum_sqr[i + l] - g_cumsum_sqr[i]) / float(l) - mean * mean);
 		g_mean[i] = mean;
 		g_std[i] = std;
 	}
