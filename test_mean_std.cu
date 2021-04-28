@@ -101,7 +101,5 @@ void test_mean_std() {
 	free(h_cumsum_sqr);
 	free(h_mean);
 	free(h_std);
-
-	printf("Mean_std test is completed");
 }
 

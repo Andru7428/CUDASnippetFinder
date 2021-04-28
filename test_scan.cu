@@ -71,6 +71,4 @@ void test_scan() {
 	free(h_idata);
 	free(h_odata);
 	free(h_cumsum);
-
-	printf("Scan test is completed");
 }

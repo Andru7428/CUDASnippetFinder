@@ -22,7 +22,7 @@ __global__ void find_all_pab(float* g_ed_norm, float* g_all_pab, int m, int l, i
 	int i = blockId * blockDim.x + threadIdx.x;
 
 	if (x < (n - l) && y < (n / m) + 1) {
-		//int min = g_ed_norm[i];
+		int min = g_ed_norm[i];
 
 		for (int k = 1; k < (m - l); k++) {
 			float a = g_ed_norm[x + y * n];
