@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="kernels.cu" />
+    <CudaCompile Include="kernel_gpu_utils.cu" />
+    <CudaCompile Include="qt_kernels.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="common.cpp" />
+    <ClCompile Include="cpu_kernels.cpp" />
+    <ClCompile Include="cpu_stats.cpp" />
+    <ClCompile Include="kernel_common.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="qt_helper.cpp" />
+    <ClCompile Include="SCAMP.cpp" />
+    <ClCompile Include="scamp_utils.cpp" />
+    <ClCompile Include="tile.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="common.h" />
+    <ClInclude Include="cpu_kernels.h" />
+    <ClInclude Include="cpu_stats.h" />
+    <ClInclude Include="defines.h" />
+    <ClInclude Include="kernels.h" />
+    <ClInclude Include="kernels_compute.h" />
+    <ClInclude Include="kernels_smem.h" />
+    <ClInclude Include="kernel_common.h" />
+    <ClInclude Include="kernel_gpu_utils.h" />
+    <ClInclude Include="qt_helper.h" />
+    <ClInclude Include="qt_kernels.h" />
+    <ClInclude Include="SCAMP.h" />
+    <ClInclude Include="scamp_exception.h" />
+    <ClInclude Include="scamp_utils.h" />
+    <ClInclude Include="tile.h" />
+  </ItemGroup>
+</Project>
