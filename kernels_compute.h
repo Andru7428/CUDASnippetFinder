@@ -787,6 +787,9 @@ __device__ inline void do_row_edge(
   DISTANCE_TYPE dist[4];
   int col = info.local_col;
   int row = info.local_row;
+  int g_col = info.global_col;
+  int g_row = info.global_row;
+  float* d = info.distance_matrix;
   uint32_t idx_row = 0;
   DATA_TYPE inormr = smem.inorm_row[row];
   DATA_TYPE dgr = smem.dg_row[row];
@@ -797,6 +800,11 @@ __device__ inline void do_row_edge(
   dist[1] = info.cov2 * smem.inorm_col[col + 1] * inormr;
   dist[2] = info.cov3 * smem.inorm_col[col + 2] * inormr;
   dist[3] = info.cov4 * smem.inorm_col[col + 3] * inormr;
+
+  d[g_col * 4] = dist[0];
+  d[g_col * 4 + 1] = dist[1];
+  d[g_col * 4 + 2] = dist[2];
+  d[g_col * 4 + 3] = dist[3];
 
   // Update cov and compute the next distance values (row y)
   info.cov1 = info.cov1 + smem.df_col[col] * dgr + smem.dg_col[col] * dfr;

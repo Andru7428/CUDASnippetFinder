@@ -30,6 +30,7 @@ __global__ void __launch_bounds__(BLOCKSZ, blocks_per_sm)
   constexpr int tile_width = tile_height + BLOCKSZ * DIAGS_PER_THREAD;
 
   SCAMPThreadInfo<ACCUM_TYPE> thread_info;
+  thread_info.distance_matrix = args.distance_matrix;
 
   extern __shared__ char smem_raw[];
 

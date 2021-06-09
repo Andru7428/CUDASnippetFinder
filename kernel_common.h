@@ -34,6 +34,8 @@ struct SCAMPKernelInputArgs {
   int64_t global_start_row;
 
   OptionalArgs opt;
+
+  float* distance_matrix;
   void Print();
 };
 
