@@ -418,7 +418,7 @@ __device__ inline FORCE_INLINE void do_row(
     const DATA_TYPE inormr[4], const DATA_TYPE dfr[4], const DATA_TYPE dgr[4],
     const float curr_mp_row_val[4], unsigned int idxc[7],
     SCAMPSmem<DATA_TYPE, PROFILE_DATA_TYPE, PROFILE_TYPE> smem,
-    OptionalArgs args) {
+    OptionalArgs args, int n) {
   DISTANCE_TYPE dist[4];
 
   // Compute the correlation values for the current tile row
@@ -433,6 +433,15 @@ __device__ inline FORCE_INLINE void do_row(
   info.cov2 = info.cov2 + dfc[iter + 1] * dgr[iter] + dgc[iter + 1] * dfr[iter];
   info.cov3 = info.cov3 + dfc[iter + 2] * dgr[iter] + dgc[iter + 2] * dfr[iter];
   info.cov4 = info.cov4 + dfc[iter + 3] * dgr[iter] + dgc[iter + 3] * dfr[iter];
+
+  float* d = info.distance_matrix;
+  int g_col = info.global_col + iter;
+  int g_row = info.global_row + iter;
+  int g_idx = g_col + g_row * n;
+  d[g_idx] = dist[0];
+  d[g_idx + 1] = dist[1];
+  d[g_idx + 2] = dist[2];
+  d[g_idx + 3] = dist[3];
 
   // Perform any profile-specific distance calculations
   // Update the column best-so-far values
@@ -483,7 +492,7 @@ template <typename DATA_TYPE, typename VEC2_DATA_TYPE, typename VEC4_DATA_TYPE,
 void __device__
 do_iteration_fast(SCAMPThreadInfo<ACCUM_TYPE> &info,
                   SCAMPSmem<DATA_TYPE, PROFILE_DATA_TYPE, PROFILE_TYPE> &smem,
-                  OptionalArgs &args) {
+                  OptionalArgs &args, int n) {
   // Load row values 4 at a time, load column values 4 at a time
   int r = info.local_row >> 2;
   int c = info.local_col >> 2;
@@ -595,19 +604,19 @@ do_iteration_fast(SCAMPThreadInfo<ACCUM_TYPE> &info,
   do_row<0, DATA_TYPE, PROFILE_DATA_TYPE, ACCUM_TYPE, DISTANCE_TYPE,
          COMPUTE_ROWS, COMPUTE_COLS, PROFILE_TYPE>(
       info, distc, inormc, dfc, dgc, inormr, dfr, dgr, mp_row_check, idxc, smem,
-      args);
+      args, n);
   do_row<1, DATA_TYPE, PROFILE_DATA_TYPE, ACCUM_TYPE, DISTANCE_TYPE,
          COMPUTE_ROWS, COMPUTE_COLS, PROFILE_TYPE>(
       info, distc, inormc, dfc, dgc, inormr, dfr, dgr, mp_row_check, idxc, smem,
-      args);
+      args, n);
   do_row<2, DATA_TYPE, PROFILE_DATA_TYPE, ACCUM_TYPE, DISTANCE_TYPE,
          COMPUTE_ROWS, COMPUTE_COLS, PROFILE_TYPE>(
       info, distc, inormc, dfc, dgc, inormr, dfr, dgr, mp_row_check, idxc, smem,
-      args);
+      args, n);
   do_row<3, DATA_TYPE, PROFILE_DATA_TYPE, ACCUM_TYPE, DISTANCE_TYPE,
          COMPUTE_ROWS, COMPUTE_COLS, PROFILE_TYPE>(
       info, distc, inormc, dfc, dgc, inormr, dfr, dgr, mp_row_check, idxc, smem,
-      args);
+      args, n);
 
   // Update the column wise matrix profile with the best-so-far
   if (COMPUTE_COLS) {
@@ -787,9 +796,6 @@ __device__ inline void do_row_edge(
   DISTANCE_TYPE dist[4];
   int col = info.local_col;
   int row = info.local_row;
-  int g_col = info.global_col;
-  int g_row = info.global_row;
-  float* d = info.distance_matrix;
   uint32_t idx_row = 0;
   DATA_TYPE inormr = smem.inorm_row[row];
   DATA_TYPE dgr = smem.dg_row[row];
@@ -800,11 +806,15 @@ __device__ inline void do_row_edge(
   dist[1] = info.cov2 * smem.inorm_col[col + 1] * inormr;
   dist[2] = info.cov3 * smem.inorm_col[col + 2] * inormr;
   dist[3] = info.cov4 * smem.inorm_col[col + 3] * inormr;
-
-  d[g_col * 4] = dist[0];
-  d[g_col * 4 + 1] = dist[1];
-  d[g_col * 4 + 2] = dist[2];
-  d[g_col * 4 + 3] = dist[3];
+  
+  float* d = info.distance_matrix;
+  int g_col = info.global_col;
+  int g_row = info.global_row;
+  int g_idx = g_col + g_row * n;
+  d[g_idx] = dist[0];
+  d[g_idx + 1] = dist[1];
+  d[g_idx + 2] = dist[2];
+  d[g_idx + 3] = dist[3];
 
   // Update cov and compute the next distance values (row y)
   info.cov1 = info.cov1 + smem.df_col[col] * dgr + smem.dg_col[col] * dfr;

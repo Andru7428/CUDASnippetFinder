@@ -362,3 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /arr.txt
+/matr_scamp.txt
+/WalkRun2_80_3800_240.txt

@@ -32,15 +32,11 @@ int main(int argc, char** argv) {
     size_t start_row = 0;
     size_t start_col = 0;
     
-    int n = 100;
-    int m = 10;
+    int n = 7000;
+    int m = 240;
     std::vector<double> Ta_h(n);
 
-    //for (int i = 0; i < n; i++) {
-    //    Ta_h[i] = (rand() & 0xFF);
-    //}
-
-    std::ifstream is("arr.txt");
+    std::ifstream is("WalkRun2_80_3800_240.txt");
     for (int i = 0; i < n; ++i)
     {
         is >> Ta_h[i];
@@ -54,7 +50,7 @@ int main(int argc, char** argv) {
         printf("Error: window size must be smaller than the timeseries length\n");
         return 1;
     }
-
+     
     SCAMP::SCAMPArgs args;
     args.window = m;
     args.has_b = false;
@@ -64,7 +60,7 @@ int main(int argc, char** argv) {
     args.profile_type = ParseProfileType("1NN_INDEX");
     args.timeseries_a = std::move(Ta_h);
     args.silent_mode = false;
-    int size = n * 4 * sizeof(float);
+    int size = pow(n - m + 1, 2) * sizeof(float);
     cudaMalloc(&args.distance_matrix, size);
 
     try {
@@ -78,10 +74,13 @@ int main(int argc, char** argv) {
 
     float* distance_matrix = (float*)malloc(size);
     cudaMemcpy(distance_matrix, args.distance_matrix, size, cudaMemcpyDeviceToHost);
-    for (int i = 0; i < 4 * n; i++) {
+    std::ofstream os("matr_scamp.txt");
+    for (int i = 0; i < pow(n - m + 1, 2); i++) {
         //printf("%f\n", sqrt(2 * m * (1 - distance_matrix[i])));
-        printf("%f\n", distance_matrix[i]);
+        //printf("%f\n", distance_matrix[i]);
+        os << distance_matrix[i] << "\n";
     }
+    os.close();
 
     WriteProfileToFile("profile", "index",
         args.profile_a, false, m,

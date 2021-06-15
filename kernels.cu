@@ -111,7 +111,7 @@ __global__ void __launch_bounds__(BLOCKSZ, blocks_per_sm)
         do_iteration_fast<DATA_TYPE, VEC2_DATA_TYPE, VEC4_DATA_TYPE, ACCUM_TYPE,
                           PROFILE_DATA_TYPE, DISTANCE_TYPE, COMPUTE_ROWS,
                           COMPUTE_COLS, PROFILE_TYPE>(thread_info, smem,
-                                                      args.opt);
+                                                      args.opt, args.n_x);
       }
 
     } else if (start_diag < num_diags) {
