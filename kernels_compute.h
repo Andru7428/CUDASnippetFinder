@@ -624,6 +624,44 @@ do_iteration_fast(SCAMPThreadInfo<ACCUM_TYPE> &info,
         info, smem, distc, idxc);
   }
 
+  int c = info.local_col >> 2;
+
+  ulonglong4 mp_col_check1, mp_col_check2;
+  float mp_col_check[7];
+
+  // Load the best-so-far values 4 at a time to reduce shared memory
+  // transactions We are preloading these values to recuce the number of atomic
+  // operations in MPatomicMax_check this is a 'test-and-test-and-set' strategy
+  mp_col_check1 = reinterpret_cast<ulonglong4*>(smem.local_mp_col)[c];
+  mp_col_check2 = reinterpret_cast<ulonglong4*>(smem.local_mp_col)[c + 1];
+
+  // Rename to array layout for loop
+  mp_entry e;
+  e.ulong = mp_col_check1.x;
+  mp_col_check[0] = e.floats[0];
+  e.ulong = mp_col_check1.y;
+  mp_col_check[1] = e.floats[0];
+  e.ulong = mp_col_check1.z;
+  mp_col_check[2] = e.floats[0];
+  e.ulong = mp_col_check1.w;
+  mp_col_check[3] = e.floats[0];
+  e.ulong = mp_col_check2.x;
+  mp_col_check[4] = e.floats[0];
+  e.ulong = mp_col_check2.y;
+  mp_col_check[5] = e.floats[0];
+  e.ulong = mp_col_check2.z;
+  mp_col_check[6] = e.floats[0];
+
+  // Check the best-so-far column and update distance/index if necessary
+  #pragma unroll 7
+  for (int i = 0; i < 7; ++i) {
+      MPatomicMax_check<ATOMIC_BLOCK>(smem.local_mp_col + info.local_col + i,
+          distc[i], idxc[i], mp_col_check[i]);
+      if (val > curr_val) {
+          MPatomicMax<type>(address, val, idx);
+      }
+  }
+
   // Advance counters
   info.local_col += DIAGS_PER_THREAD;
   info.local_row += DIAGS_PER_THREAD;

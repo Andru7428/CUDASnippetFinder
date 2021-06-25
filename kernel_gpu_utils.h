@@ -116,6 +116,7 @@ struct SCAMPThreadInfo {
   uint32_t global_row;
   uint32_t global_col;
   float* distance_matrix;
+  float* MPdist_vector;
 };
 
 // Gets the profile element size as used by the GPU kernels

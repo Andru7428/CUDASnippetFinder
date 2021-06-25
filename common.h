@@ -187,6 +187,7 @@ struct SCAMPArgs {
   int64_t matrix_width;
 
   float* distance_matrix;
+  float* MPdist_vector;
 };
 
 // Struct describing kernel arguments which are non-standard
@@ -201,6 +202,7 @@ struct OptionalArgs {
   double threshold;
 
   float* distance_matrix;
+  float* MPdist_vector;
 };
 
 // Defines the execution environment of a SCAMP tile

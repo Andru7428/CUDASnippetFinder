@@ -294,6 +294,7 @@ void do_SCAMP(SCAMPArgs *args, const std::vector<int> &devices,
   // Allocate and initialize memory
   OptionalArgs _opt_args(args->distance_threshold);
   _opt_args.distance_matrix = args->distance_matrix;
+  _opt_args.MPdist_vector = args->MPdist_vector;
 
   if (!args->silent_mode) {
     std::cout << "Building SCAMP Operation from args" << std::endl;

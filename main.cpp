@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     size_t start_col = 0;
     
     int n = 7000;
-    int m = 240;
+    int l = 240;
     std::vector<double> Ta_h(n);
 
     std::ifstream is("WalkRun2_80_3800_240.txt");
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     }
 
 
-    int n_x = Ta_h.size() - m + 1;
+    int n_x = Ta_h.size() - l + 1;
     int n_y = n_x;
 
     if (n_x < 1 || n_y < 1) {
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     }
      
     SCAMP::SCAMPArgs args;
-    args.window = m;
+    args.window = l;
     args.has_b = false;
     args.profile_a.type = ParseProfileType("1NN_INDEX");
     args.profile_b.type = ParseProfileType("1NN_INDEX");
@@ -60,8 +60,9 @@ int main(int argc, char** argv) {
     args.profile_type = ParseProfileType("1NN_INDEX");
     args.timeseries_a = std::move(Ta_h);
     args.silent_mode = false;
-    int size = pow(n - m + 1, 2) * sizeof(float);
+    int size = pow(n - l + 1, 2) * sizeof(float);
     cudaMalloc(&args.distance_matrix, size);
+    cudaMalloc(&args.MPdist_vector, (n - l + 1) * sizeof(float));
 
     try {
         InitProfileMemory(&args);
@@ -75,7 +76,7 @@ int main(int argc, char** argv) {
     float* distance_matrix = (float*)malloc(size);
     cudaMemcpy(distance_matrix, args.distance_matrix, size, cudaMemcpyDeviceToHost);
     std::ofstream os("matr_scamp.txt");
-    for (int i = 0; i < pow(n - m + 1, 2); i++) {
+    for (int i = 0; i < pow(n - l + 1, 2); i++) {
         //printf("%f\n", sqrt(2 * m * (1 - distance_matrix[i])));
         //printf("%f\n", distance_matrix[i]);
         os << distance_matrix[i] << "\n";
@@ -83,7 +84,7 @@ int main(int argc, char** argv) {
     os.close();
 
     WriteProfileToFile("profile", "index",
-        args.profile_a, false, m,
+        args.profile_a, false, l,
         0, 0);
 
     return 0;
