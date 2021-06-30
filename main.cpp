@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
+#include "MPdist.h"
 
 #ifdef _DISTRIBUTED_EXECUTION_
 #include "../kubernetes/scamp_interface.h"
@@ -32,8 +33,9 @@ int main(int argc, char** argv) {
     size_t start_row = 0;
     size_t start_col = 0;
     
-    int n = 7000;
-    int l = 240;
+    int n = 6960;
+    int m = 240;
+    int l = 120;
     std::vector<double> Ta_h(n);
 
     std::ifstream is("WalkRun2_80_3800_240.txt");
@@ -75,6 +77,13 @@ int main(int argc, char** argv) {
 
     float* distance_matrix = (float*)malloc(size);
     cudaMemcpy(distance_matrix, args.distance_matrix, size, cudaMemcpyDeviceToHost);
+
+    float* h_mpdist = (float*)malloc((n - l) * sizeof(float));
+    MPdist(args.distance_matrix, distance_matrix, h_mpdist, n, m, l);
+
+    /*
+    float* distance_matrix = (float*)malloc(size);
+    cudaMemcpy(distance_matrix, args.distance_matrix, size, cudaMemcpyDeviceToHost);
     std::ofstream os("matr_scamp.txt");
     for (int i = 0; i < pow(n - l + 1, 2); i++) {
         //printf("%f\n", sqrt(2 * m * (1 - distance_matrix[i])));
@@ -86,6 +95,6 @@ int main(int argc, char** argv) {
     WriteProfileToFile("profile", "index",
         args.profile_a, false, l,
         0, 0);
-
+    */
     return 0;
 }

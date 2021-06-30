@@ -4,6 +4,7 @@
     <CudaCompile Include="kernels.cu" />
     <CudaCompile Include="kernel_gpu_utils.cu" />
     <CudaCompile Include="qt_kernels.cu" />
+    <CudaCompile Include="MPdist.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.cpp" />
@@ -32,5 +33,6 @@
     <ClInclude Include="scamp_exception.h" />
     <ClInclude Include="scamp_utils.h" />
     <ClInclude Include="tile.h" />
+    <ClInclude Include="MPdist.h" />
   </ItemGroup>
 </Project>
