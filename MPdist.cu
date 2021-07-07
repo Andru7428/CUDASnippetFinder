@@ -44,9 +44,7 @@ void MPdist(float* d_distance_matrix, float* h_distance_matrix, float* d_mpdist,
 		for (int j = 0; j < m - l; j++) {
 			int idx = h_Pba[i] + i * (n - l) + j - 1;
 			Pab[i * (m - l) + j] = h_distance_matrix[idx];
-			printf("%f", Pab[i * (m - l) + j]);
 		}
-
 	}
 
 	for (int i = 0; i < (n - m) ; i++) {

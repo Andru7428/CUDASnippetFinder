@@ -88,13 +88,16 @@
     <CudaCompile Include="kernel_gpu_utils.cu" />
     <CudaCompile Include="MPdist.cu" />
     <CudaCompile Include="qt_kernels.cu" />
+    <CudaCompile Include="SnippetFinder.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.cpp" />
     <ClCompile Include="cpu_kernels.cpp" />
     <ClCompile Include="cpu_stats.cpp" />
     <ClCompile Include="kernel_common.cpp" />
-    <ClCompile Include="main.cpp" />
+    <CudaCompile Include="main.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
     <ClCompile Include="qt_helper.cpp" />
     <ClCompile Include="SCAMP.cpp" />
     <ClCompile Include="scamp_utils.cpp" />
@@ -116,6 +119,7 @@
     <ClInclude Include="SCAMP.h" />
     <ClInclude Include="scamp_exception.h" />
     <ClInclude Include="scamp_utils.h" />
+    <ClInclude Include="SnippetFinder.h" />
     <ClInclude Include="tile.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
