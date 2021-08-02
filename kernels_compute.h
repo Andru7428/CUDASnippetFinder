@@ -438,19 +438,28 @@ __device__ inline FORCE_INLINE void do_row(
   int g_col = info.global_col + iter;
   int g_row = info.global_row + iter;
   int g_idx = g_col + g_row * n;
+
+  dist[0] = dist[0] == 0 || isnan(dist[0]) ? 0 : 2 * info.window * (1 - dist[0]);
+  dist[1] = dist[1] == 0 || isnan(dist[1]) ? 0 : 2 * info.window * (1 - dist[1]);
+  dist[2] = dist[2] == 0 || isnan(dist[2]) ? 0 : 2 * info.window * (1 - dist[2]);
+  dist[3] = dist[3] == 0 || isnan(dist[3]) ? 0 : 2 * info.window * (1 - dist[3]);
+
+  //printf("%d %d: %f %f %f %f\n", g_col, g_row, dist[0], dist[1], dist[2], dist[3]);
+
   d[g_idx] = dist[0];
   d[g_idx + 1] = dist[1];
   d[g_idx + 2] = dist[2];
   d[g_idx + 3] = dist[3];
 
-  g_idx = g_row + g_col * n;
-  d[g_idx] = dist[0];
-  d[g_idx + 1 * n] = dist[1];
-  d[g_idx + 2 * n] = dist[2];
-  d[g_idx + 3 * n] = dist[3];
+  //g_idx = g_row + g_col * n;
+  //d[g_idx] = dist[0];
+  //d[g_idx + 1 * n] = dist[1];
+  //d[g_idx + 2 * n] = dist[2];
+  //d[g_idx + 3 * n] = dist[3];
 
   // Perform any profile-specific distance calculations
   // Update the column best-so-far values
+  /*
   if (COMPUTE_COLS) {
     merge_to_column<iter, DATA_TYPE, PROFILE_DATA_TYPE, ACCUM_TYPE,
                     DISTANCE_TYPE>(info, smem, distc, dist, idxc, args);
@@ -462,6 +471,7 @@ __device__ inline FORCE_INLINE void do_row(
     update_row<iter, DATA_TYPE, PROFILE_DATA_TYPE, ACCUM_TYPE, DISTANCE_TYPE>(
         info, smem, dist, curr_mp_row_val[iter], args);
   }
+  */
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -817,10 +827,18 @@ __device__ inline void do_row_edge(
   int g_col = info.global_col;
   int g_row = info.global_row;
   int g_idx = g_col + g_row * n;
-  d[g_idx] = dist[0];
-  d[g_idx + 1] = dist[1];
-  d[g_idx + 2] = dist[2];
-  d[g_idx + 3] = dist[3];
+
+  dist[0] = dist[0] == 0 ? 0 : 2 * info.window * (1 - dist[0]);
+  dist[1] = dist[1] == 0 ? 0 : 2 * info.window * (1 - dist[1]);
+  dist[2] = dist[2] == 0 ? 0 : 2 * info.window * (1 - dist[2]);
+  dist[3] = dist[3] == 0 ? 0 : 2 * info.window * (1 - dist[3]);
+
+  //printf("Edge %d %d: %f %f %f %f\n", g_col, g_row, dist[0], dist[1], dist[2], dist[3]);
+
+  //d[g_idx] = dist[0];
+  //d[g_idx + 1] = dist[1];
+  //d[g_idx + 2] = dist[2];
+  //d[g_idx + 3] = dist[3];
 
   //g_idx = g_row + g_col * n;
   //d[g_idx] = dist[0];
@@ -837,6 +855,7 @@ __device__ inline void do_row_edge(
   info.cov4 =
       info.cov4 + smem.df_col[col + 3] * dgr + smem.dg_col[col + 3] * dfr;
 
+  /*
   reduce_edge<0, DATA_TYPE, PROFILE_DATA_TYPE, ACCUM_TYPE, DISTANCE_TYPE,
               COMPUTE_ROWS, COMPUTE_COLS>(smem, info, dist, dist_row, idx_row,
                                           diag, num_diags, n, args);
@@ -854,4 +873,5 @@ __device__ inline void do_row_edge(
     reduce_row<DATA_TYPE, PROFILE_DATA_TYPE, DISTANCE_TYPE>(smem, row, dist_row,
                                                             idx_row);
   }
+  */
 }

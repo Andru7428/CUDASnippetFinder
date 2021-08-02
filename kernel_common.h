@@ -36,7 +36,7 @@ struct SCAMPKernelInputArgs {
   OptionalArgs opt;
 
   float* distance_matrix;
-  float* MPdist_vector;
+  int window;;
   void Print();
 };
 

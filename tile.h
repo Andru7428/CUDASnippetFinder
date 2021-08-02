@@ -33,8 +33,6 @@ class Tile {
   // Per worker output vectors (host)
   Profile _profile_a_tile, _profile_b_tile;
 
-  std::vector<std::vector<float>> _distance_matrix_tile;
-
   // Helper for FFT computation
   std::shared_ptr<qt_compute_helper> _scratch;
 

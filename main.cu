@@ -15,23 +15,26 @@
 #include <math.h>
 #include "MPdist.h"
 #include "SnippetFinder.h"
+#include <chrono>
 
 int main(int argc, char** argv) {
     bool self_join, computing_rows, computing_cols;
     size_t start_row = 0;
     size_t start_col = 0;
     
-    int n = 7002;
-    int m = 240;
-    int l = 120;
+    int n = 20000;
+    int m = 900;
+    int l = m / 2;
+    
     std::vector<double> Ta_h(n);
 
-    std::ifstream is("WalkRun2_80_3800_240.txt");
-    for (int i = 0; i < n; ++i)
+    std::ifstream is("WildVTrainedBird_10001_900.txt");
+    for (int i = 0; i < n; i++)
     {
         is >> Ta_h[i];
     }
 
+    auto start = std::chrono::high_resolution_clock::now();
 
     int n_x = Ta_h.size() - l + 1;
     int n_y = n_x;
@@ -40,7 +43,11 @@ int main(int argc, char** argv) {
         printf("Error: window size must be smaller than the timeseries length\n");
         return 1;
     }
-     
+    int N = (n + m - 1) / m - 1;
+    unsigned __int64 size = (n - l + 1) * (m - l + 1) * sizeof(float);
+    float* d_profiles;
+    cudaMalloc(&d_profiles, N * (n - m) * sizeof(float));
+    size = pow(n - l + 1, 2) * sizeof(float);
     SCAMP::SCAMPArgs args;
     args.window = l;
     args.has_b = false;
@@ -48,12 +55,13 @@ int main(int argc, char** argv) {
     args.profile_b.type = ParseProfileType("1NN_INDEX");
     args.precision_type = GetPrecisionType(false, true, false, false);
     args.profile_type = ParseProfileType("1NN_INDEX");
-    args.timeseries_a = std::move(Ta_h);
+    args.timeseries_a = Ta_h;
     args.silent_mode = false;
-    int size = pow(n - l + 1, 2) * sizeof(float);
-    cudaMalloc(&args.distance_matrix, size);
-    cudaMalloc(&args.MPdist_vector, (n - l + 1) * sizeof(float));
-    /*
+    cudaError_t code = cudaMalloc(&args.distance_matrix, size);
+    if (code != cudaSuccess)
+    {
+        printf("Memory error");
+    }
     try {
         InitProfileMemory(&args);
         SCAMP::do_SCAMP(&args);
@@ -62,61 +70,46 @@ int main(int argc, char** argv) {
         std::cout << e.what() << "\n";
         exit(1);
     }
+    /*
+    for (int i = 0; i < N; i++) {
+        auto first = Ta_h.cbegin() + i * m;
+        auto last = Ta_h.cbegin() + (i * m + m);
+        std::vector<double> Tb_h(first, last);
+        args.timeseries_b = std::move(Tb_h);
+        try {
+            InitProfileMemory(&args);
+            SCAMP::do_SCAMP(&args);
+        }
+        catch (const SCAMPException& e) {
+            std::cout << e.what() << "\n";
+            exit(1);
+        }
 
-    float* distance_matrix = (float*)malloc(size);
-    cudaMemcpy(distance_matrix, args.distance_matrix, size, cudaMemcpyDeviceToHost);
-
-    float* h_mpdist = (float*)malloc((n - m) * sizeof(float));
-    MPdist(args.distance_matrix, distance_matrix, h_mpdist, n, m, l);
-    for (int i = 0; i < n - m; i++) {
-        printf("%f ", sqrt(2 * l * (1 - h_mpdist[i])));
+        MPdist_(args.distance_matrix, d_profiles, n, m, l, i);
     }
-    */
-    int numThreads = 256;
-    int numBlocks = n / 256 / 2 + 1;
+   
+    //unsigned __int64 size = pow(n - l + 1, 2) * sizeof(float);
 
-    int N = (n + m - 1) / m - 1;
+    //float* distance_matrix = (float*)malloc(size);
+    //cudaMemcpy(distance_matrix, args.distance_matrix, size, cudaMemcpyDeviceToHost);
+    */
+    /*
+    
     float* h_profiles = (float*)malloc(N * (n - m) * sizeof(float));
+    MPdist(args.distance_matrix, distance_matrix, h_profiles, n, m, l);
     float* d_profiles;
     cudaMalloc(&d_profiles, N * (n - m) * sizeof(float));
-    float* h_profile_area = (float*)malloc(N * (n - m) * sizeof(float));
-    float* d_profile_area = (float*)malloc(numBlocks * sizeof(float));
-    cudaMalloc(&d_profile_area, numBlocks * sizeof(float));
-
-    std::ifstream is_2("profiles.txt");
-    for (int i = 0; i < N * (n - m); i++)
-    {
-        is_2 >> h_profiles[i];
-    }
     cudaMemcpy(d_profiles, h_profiles, N * (n - m) * sizeof(float), cudaMemcpyHostToDevice);
-
     std::vector<Snippet> snippets = snippet_finder(d_profiles, n, m, 2);
 
-    /*
-    get_profile_area<<<numBlocks, numThreads, numThreads * sizeof(float)>>>(d_profiles,  d_profiles + n - m, d_profile_area, n - m);
-    cudaMemcpy(h_profile_area, d_profile_area, numBlocks * sizeof(float), cudaMemcpyDeviceToHost);
-
-    float sum = 0;
-    for (int i = 0; i < numBlocks; i++)
-    {
-        sum += h_profile_area[i];
-    }
-    printf("%f", sum);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    printf("%d", duration.count());
     */
-    /*
-    float* distance_matrix = (float*)malloc(size);
-    cudaMemcpy(distance_matrix, args.distance_matrix, size, cudaMemcpyDeviceToHost);
-    std::ofstream os("matr_scamp.txt");
-    for (int i = 0; i < pow(n - l + 1, 2); i++) {
-        //printf("%f\n", sqrt(2 * m * (1 - distance_matrix[i])));
-        //printf("%f\n", distance_matrix[i]);
-        os << distance_matrix[i] << "\n";
-    }
-    os.close();
 
-    WriteProfileToFile("profile", "index",
-        args.profile_a, false, l,
-        0, 0);
-    */
+    //for (Snippet& it : snippets) {
+    //    printf("idx: %d, frac: %f\n", it.index, it.frac);
+    //}
+    
     return 0;
 }

@@ -12,4 +12,6 @@ __global__ void get_profile_area(float* g_M, float* g_D, float* g_profile_area, 
 
 __device__ void warpReduce(volatile int* s_data, int t);
 
-__global__ void set_min(float* g_M, float* g_profiles, int n);
+__global__ void set_min(float* g_M, float* g_profiles, int* d_neighbours, int profile_idx, int n);
+
+

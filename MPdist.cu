@@ -1,64 +1,128 @@
 ﻿#include <cuda_runtime.h>
-#include "cublas_v2.h"
+#include <device_launch_parameters.h>
 #include "MPdist.h"
 #include "common.h"
 #define IDX2F(i, j, n) (i * n + j)
 #include <limits>
 
-void computePba(float* d_distance_matrix, int* d_Pba, int n, int m, int l) {
-	cublasHandle_t handle;
-	cublasCreate(&handle);
-	//cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE);
-	for (int i = 0; i < n - l; i++) {
-		cublasIsamin(handle, m - l + 1, &d_distance_matrix[i * (n - l)], 1, &d_Pba[i]);
-		//d_Pba[i] += IDX2F(i, 0, n - l) - 1;
-	}
-	cublasDestroy(handle);
+
+void MPdist_(float* d_distance_matrix, float* d_profile, int n, int m, int l, int idx) {
+	float* d_Pab;
+	cudaMalloc(&d_Pab, l * (n - l) * sizeof(float));
+	float* d_Pba;
+	cudaMalloc(&d_Pba, l * sizeof(float));
+
+	computePab_<<<dim3(n - l, l), 256, l * sizeof(float) / 2>>>(d_distance_matrix, d_Pab, n - l, l);
+	computePba_<<<n, 256, l * sizeof(float) / 2 >>>(d_distance_matrix, d_Pba, n - l, l);
+	computeMPdist<<<n - l, 256, 2 * l * sizeof(float)>>>(d_Pab, d_Pba, d_profile, n - l, l, idx);
 }
 
-void computePab(float* d_distance_matrix, int* d_Pab, int n, int m, int l) {
-	cublasHandle_t handle;
-	cublasCreate(&handle);
-	for (int i = 0; i < n - l; i++) {
-		for (int j = 0; j < m - l; j++) {
-			cublasIsamin(handle, m - l + 1, &d_distance_matrix[i * (n - l) + j], 1, &d_Pab[i * (m - l) + j]);
-		}
+__global__ void computeMPdist(float* d_Pab, float* d_Pba, float* d_MPdist, int n, int l, int idx) {
+	unsigned int tid = threadIdx.x;
+	extern __shared__ float sdata[];
+	if (tid < l / 2) {
+		sdata[tid] = d_Pab[tid + l * blockIdx.x];
+		sdata[tid + l] = d_Pba[tid + blockIdx.x];
 	}
-	cublasDestroy(handle);
-}
+	__syncthreads();
 
-void MPdist(float* d_distance_matrix, float* h_distance_matrix, float* d_mpdist, int n, int m, int l) {
-	int* h_Pba = (int*)malloc((n - l) * sizeof(int));
-	computePba(d_distance_matrix, h_Pba, n, m, l);
-
-	float* Pba = (float*)malloc((n - l) * sizeof(float));
-	for (int i = 0; i < n - l; i++) {
-		int idx = h_Pba[i] + i * (n - l) - 1;
-		Pba[i] = h_distance_matrix[idx];
-	}
-	int* h_Pab = (int*)malloc((n - l) * (m - l) * sizeof(int));
-	computePab(d_distance_matrix, h_Pab, n, m, l);
-
-	float* Pab = (float*)malloc((n - l) * (m - l) * sizeof(float));
-	for (int i = 0; i < n - l; i++) {
-		for (int j = 0; j < m - l; j++) {
-			int idx = h_Pba[i] + i * (n - l) + j - 1;
-			Pab[i * (m - l) + j] = h_distance_matrix[idx];
+	for (unsigned int stride = blockDim.x / 2; stride > 32; stride /= 2) {
+		if (tid < stride && tid + stride < l) {
+			sdata[tid] = min(sdata[tid], sdata[tid + stride]);
 		}
+		__syncthreads();
 	}
 
-	for (int i = 0; i < (n - m) ; i++) {
-		float* Pabba = (float*)malloc(2 * (m - l) * sizeof(float));
-		float min = std::numeric_limits<float>::max();
-		for (int j = 0; j < m - l; j++) {
-			Pabba[j] = Pba[i + j];
-			Pabba[j + m - l] = Pab[i * (m - l) + j];
-		}
+	if (tid < 32) {
+		warpReduce(sdata, tid, l);
+	}
 
-		for (int j = 0; j < 2 * (m - l); j++) {
-			if (Pabba[j] < min) min = Pabba[j];
-		}
-		d_mpdist[i] = min;
+	if (tid == 0) {
+		d_MPdist[blockIdx.x + idx * (n - 2 * l)] = sdata[0];
 	}
 }
 
+__global__ void precompute_min_Pab(float* d_distance_matrix, int* d_Pab, int n, int l) {
+	unsigned int tid = threadIdx.x;
+	extern __shared__ float sdata[];
+
+	if (tid < l / 2) {
+		sdata[tid] = min(d_distance_matrix[blockIdx.x * n + tid], d_distance_matrix[blockIdx.x * n + tid + l / 2]);
+	}
+	__syncthreads();
+
+	for (unsigned int stride = blockDim.x / 2; stride > 32; stride /= 2) {
+		if (tid < stride && tid + stride < l / 2) {
+			sdata[tid] = min(sdata[tid], sdata[tid + stride]);
+		}
+		__syncthreads();
+	}
+
+	if (tid < 32) {
+		warpReduce(sdata, tid, l);
+	}
+
+	if (tid == 0) {
+		printf("%d: %f\n", blockIdx.x, sdata[0]);
+	}
+}
+
+__global__ void computePab_(float* d_distance_matrix, float* d_Pab, int n, int l) {
+	unsigned int tid = threadIdx.x;
+	extern __shared__ float sdata[];
+
+	if (tid < l / 2) {
+		sdata[tid] = min(d_distance_matrix[blockIdx.y * n + tid + blockIdx.x], d_distance_matrix[blockIdx.y * n + tid + l / 2 + blockIdx.x]);
+	}
+	__syncthreads();
+
+	for (unsigned int stride = blockDim.x / 2; stride > 32; stride /= 2) {
+		if (tid < stride && tid + stride < l / 2) {
+			sdata[tid] = min(sdata[tid], sdata[tid + stride]);
+		}
+		__syncthreads();
+	}
+
+	if (tid < 32) {
+		warpReduce(sdata, tid, l);
+	}
+
+	if (tid == 0) {
+		d_Pab[l * blockIdx.x + blockIdx.y] = sdata[0];
+	}
+}
+
+__global__ void computePba_(float* d_distance_matrix, float* d_Pba, int n, int l) {
+	unsigned int tid = threadIdx.x;
+	extern __shared__ float sdata[];
+
+	if (tid  < l / 2) {
+		sdata[tid] = min(d_distance_matrix[tid * n + blockIdx.x], d_distance_matrix[(tid + l / 2) * n + blockIdx.x]);
+	}
+	__syncthreads();
+
+	for (unsigned int stride = blockDim.x / 2; stride > 32; stride /= 2) {
+		if (tid < stride && tid + stride < l / 2) {
+			sdata[tid] = min(sdata[tid], sdata[tid + stride]);
+		}
+		__syncthreads();
+	}
+
+	if (tid < 32) {
+		warpReduce(sdata, tid, l);
+	}
+
+	if (tid == 0) {
+		d_Pba[blockIdx.x] = sdata[0];
+	}
+}
+
+__device__ void warpReduce(volatile float* sdata, unsigned int tid, int l)
+{
+	sdata[tid] = (tid + 32 < l / 2) ? min(sdata[tid], sdata[tid + 32]) : sdata[tid];
+	sdata[tid] = min(sdata[tid], sdata[tid + 16]);
+	sdata[tid] = min(sdata[tid], sdata[tid + 8]);
+	sdata[tid] = min(sdata[tid], sdata[tid + 4]);
+	sdata[tid] = min(sdata[tid], sdata[tid + 2]);
+	sdata[tid] = min(sdata[tid], sdata[tid + 1]);
+}

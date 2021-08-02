@@ -1,7 +1,14 @@
 #pragma once
 
-void computePba(float* d_distance_matrix, int* d_Pba, int n, int m, int l);
+void MPdist_(float* d_distance_matrix, float* d_profile, int n, int m, int l, int idx);
 
-void computePab(float* d_distance_matrix, int* d_Pab, int n, int m, int l);
+__global__ void computeMPdist(float* d_Pab, float* d_Pba, float* d_MPdist, int n, int l, int idx);
 
-void MPdist(float* d_distance_matrix, float* h_distance_matrix, float* d_mpdist, int n, int m, int l);
+__global__ void precompute_min_Pab(float* d_distance_matrix, float* d_Pab, int n, int l);
+
+__global__ void computePab_(float* d_distance_matrix, float* d_Pab, int n, int l);
+
+__global__ void computePba_(float* d_distance_matrix, float* d_Pba, int n, int l);
+
+__device__ void warpReduce(volatile float* sdata, unsigned int tid, int l);
+

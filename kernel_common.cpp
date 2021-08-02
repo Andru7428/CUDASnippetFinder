@@ -37,6 +37,7 @@ SCAMPKernelInputArgs<T>::SCAMPKernelInputArgs(Tile *t, bool transpose,
   global_start_row = t->get_tile_row();
 
   distance_matrix = t->info()->opt_args.distance_matrix;
+  window = t->info()->mp_window;
 }
 
 template <typename T>
